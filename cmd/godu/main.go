@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	if len(os.Args) < 3 {
 		usage()
 		os.Exit(1)
 	}
@@ -30,7 +30,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Println("Usage: godu <command>")
+	fmt.Println("Usage: godu <command> <paths...>")
 	fmt.Println("Commands:")
 	fmt.Println("  scan - scan the filesystem and compute the total size of all regular files contained within the given path")
 	cli.ScanUsage()

@@ -10,9 +10,6 @@ import (
 )
 
 const (
-	// Path flag
-	FlagPath        = "p"
-	FlagPathMessage = "the path to scan, can be a file or directory, default is the current directory"
 
 	// Symlinks flag
 	FlagSymlinks        = "s"
@@ -29,36 +26,40 @@ const (
 
 func RunScan(args []string) error {
 	var (
-		path       string
 		symlinks   bool
 		skipErrors bool
 		verbose    bool
 	)
 	fs := flag.NewFlagSet("scan", flag.ExitOnError)
-	fs.StringVar(&path, FlagPath, ".", FlagPathMessage)
 	fs.BoolVar(&symlinks, FlagSymlinks, false, FlagSymlinksMessage)
 	fs.BoolVar(&skipErrors, FlagSkipErrors, false, FlagSkipErrorsMessage)
 	fs.BoolVar(&verbose, FlagVerbose, false, FlagVerboseMessage)
 	fs.Parse(args)
 
-	if path == "" {
+	roots := fs.Args()
+	if len(roots) == 0 {
 		return fmt.Errorf("path is required")
 	}
 
-	config := scan.NewConfig(filepath.Clean(path), symlinks, skipErrors, verbose)
-	fmt.Println("Config:", config)
+	results := scan.InitResult("Total")
+	for _, path := range roots {
+		config := scan.NewConfig(filepath.Clean(path), symlinks, skipErrors, verbose)
+		//fmt.Println("Config:", config)
 
-	result, err := scan.Scan(config)
-	if err != nil {
-		return err
+		result, err := scan.Scan(config)
+		if err != nil {
+			return err
+		}
+		if config.Verbose {
+			fmt.Fprintf(os.Stdout, "%d: %s\n", result.TotalSize, result.RootPath)
+		}
+		results.AddFromResult(result)
 	}
-	fmt.Println("Result:", result)
-
+	fmt.Println("Result:", results)
 	return nil
 }
 
 func ScanUsage() {
-	fmt.Fprintf(os.Stdout, "   -%s <path> - [REQUIRED] %s\n", FlagPath, FlagPathMessage)
 	fmt.Fprintf(os.Stdout, "   -%s <bool> - %s\n", FlagSymlinks, FlagSymlinksMessage)
 	fmt.Fprintf(os.Stdout, "   -%s <bool> - %s\n", FlagSkipErrors, FlagSkipErrorsMessage)
 	fmt.Fprintf(os.Stdout, "   -%s <bool> - %s\n", FlagVerbose, FlagVerboseMessage)

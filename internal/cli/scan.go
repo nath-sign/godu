@@ -10,20 +10,20 @@ import (
 )
 
 const (
-
-	// Symlinks flag
+	// FlagSymlinks enables following symlinks while walking paths.
 	FlagSymlinks        = "s"
 	FlagSymlinksMessage = "follow symlinks in the scan, default is false"
 
-	// Skip errors flag
+	// FlagSkipErrors continues the scan when read/stat operations fail.
 	FlagSkipErrors        = "e"
 	FlagSkipErrorsMessage = "skip errors in the scan, default is false"
 
-	// Verbose flag
+	// FlagVerbose enables per-path verbose output during scanning.
 	FlagVerbose        = "v"
 	FlagVerboseMessage = "verbose output (print subdir results), default is false"
 )
 
+// RunScan parses scan command flags and executes scans for each root path.
 func RunScan(args []string) error {
 	var (
 		symlinks   bool
@@ -59,6 +59,7 @@ func RunScan(args []string) error {
 	return nil
 }
 
+// ScanUsage prints the scan command flags and their descriptions.
 func ScanUsage() {
 	fmt.Fprintf(os.Stdout, "   -%s <bool> - %s\n", FlagSymlinks, FlagSymlinksMessage)
 	fmt.Fprintf(os.Stdout, "   -%s <bool> - %s\n", FlagSkipErrors, FlagSkipErrorsMessage)

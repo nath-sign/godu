@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>scan: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/nath-sign/godu/internal/scan/config.go (100.0%)</option>
+				
+				<option value="file1">github.com/nath-sign/godu/internal/scan/result.go (100.0%)</option>
+				
+				<option value="file2">github.com/nath-sign/godu/internal/scan/scanner.go (73.6%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package scan
+
+import "fmt"
+
+// Config controls how Scan walks the filesystem from a root path.
+type Config struct {
+        RootPath       string
+        FollowSymlinks bool
+        SkipErrors     bool
+        Verbose        bool
+}
+
+// NewConfig builds a Config for a single scan root.
+func NewConfig(rootPath string, followSymlinks bool, skipErrors bool, verbose bool) *Config <span class="cov8" title="1">{
+        return &amp;Config{
+                RootPath:       rootPath,
+                FollowSymlinks: followSymlinks,
+                SkipErrors:     skipErrors,
+                Verbose:        verbose,
+        }
+}</span>
+
+// Validate checks that required Config fields are set.
+func (c *Config) Validate() error <span class="cov8" title="1">{
+        if c.RootPath == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("root path is required")
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package scan
+
+import "fmt"
+
+// Result stores aggregated scan metrics for a root path.
+type Result struct {
+        RootPath             string
+        TotalSize            int64
+        FilesCount           int64
+        DirectoriesCount     int64
+        SymlinksSkippedCount int64
+        ErrorsCount          int64
+        OtherCount           int64
+}
+
+// InitResult creates an empty Result for the provided root path label.
+func InitResult(rootPath string) *Result <span class="cov8" title="1">{
+        return &amp;Result{
+                RootPath:             rootPath,
+                TotalSize:            0,
+                FilesCount:           0,
+                DirectoriesCount:     0,
+                SymlinksSkippedCount: 0,
+                ErrorsCount:          0,
+                OtherCount:           0,
+        }
+}</span>
+
+// AddFile increments the file count and accumulates its size.
+func (r *Result) AddFile(size int64) <span class="cov8" title="1">{
+        r.TotalSize += size
+        r.FilesCount++
+}</span>
+
+// AddDirectory increments the directory count.
+func (r *Result) AddDirectory() <span class="cov8" title="1">{
+        r.DirectoriesCount++
+}</span>
+
+// AddSymlinkSkipped increments the skipped symlink count.
+func (r *Result) AddSymlinkSkipped() <span class="cov8" title="1">{
+        r.SymlinksSkippedCount++
+}</span>
+
+// AddError increments the error count.
+func (r *Result) AddError() <span class="cov8" title="1">{
+        r.ErrorsCount++
+}</span>
+
+// AddOtherCount increments the count for non-regular/non-directory entries.
+func (r *Result) AddOtherCount() <span class="cov8" title="1">{
+        r.OtherCount++
+}</span>
+
+// AddFromResult merges counters and totals from another Result.
+func (r *Result) AddFromResult(other *Result) <span class="cov8" title="1">{
+        r.TotalSize += other.TotalSize
+        r.FilesCount += other.FilesCount
+        r.DirectoriesCount += other.DirectoriesCount
+        r.SymlinksSkippedCount += other.SymlinksSkippedCount
+        r.ErrorsCount += other.ErrorsCount
+        r.OtherCount += other.OtherCount
+}</span>
+
+// ToGB converts TotalSize from bytes to gibibytes.
+func (r *Result) ToGB() float64 <span class="cov8" title="1">{
+        return float64(r.TotalSize) / 1024 / 1024 / 1024
+}</span>
+
+// String formats Result as a human-readable summary line.
+func (r *Result) String() string <span class="cov8" title="1">{
+        return fmt.Sprintf("RootPath: %s, TotalSize: %d (%.2f GB), FilesCount: %d, DirectoriesCount: %d, SymlinksSkippedCount: %d, ErrorsCount: %d, OtherCount: %d", r.RootPath, r.TotalSize, r.ToGB(), r.FilesCount, r.DirectoriesCount, r.SymlinksSkippedCount, r.ErrorsCount, r.OtherCount)
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package scan
+
+import (
+        "fmt"
+        "io"
+        "os"
+        "path/filepath"
+)
+
+type Walker struct {
+        Result *Result
+        cfg    *Config
+}
+
+// Scan walks the configured root path and returns aggregated metrics.
+func Scan(config *Config) (*Result, error) <span class="cov8" title="1">{
+        if err := config.Validate(); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid config: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">result := InitResult(config.RootPath)
+        walker := &amp;Walker{
+                Result: result,
+                cfg:    config,
+        }
+
+        if err := walker.WalkPath(config.RootPath); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to walk path: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return result, nil</span>
+}
+
+// PrintVerbose prints a single verbose scan output line.
+func PrintVerbose(size int64, path string, writer ...io.Writer) <span class="cov8" title="1">{
+        var w io.Writer
+        if len(writer) == 0 </span><span class="cov0" title="0">{
+                w = os.Stdout
+        }</span> else<span class="cov8" title="1"> {
+                w = writer[0]
+        }</span>
+        <span class="cov8" title="1">fmt.Fprintf(w, "%-*d\t %s\n", 8, size, path)</span>
+}
+
+// WalkSymlink resolves and walks a symlink target.
+func (w *Walker) WalkSymlink(path string) error <span class="cov8" title="1">{
+        realPath, err := filepath.EvalSymlinks(path)
+        if err != nil </span><span class="cov0" title="0">{
+                if !w.cfg.SkipErrors </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to evaluate symlink: %w", err)
+                }</span>
+                <span class="cov0" title="0">w.Result.AddError()</span>
+        } else<span class="cov8" title="1"> {
+                return w.WalkPath(realPath)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+// WalkDirectory recursively walks directory entries and merges local results.
+func (w *Walker) WalkDirectory(path string) error <span class="cov8" title="1">{
+        entries, err := os.ReadDir(path)
+        if err != nil </span><span class="cov0" title="0">{
+                if !w.cfg.SkipErrors </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to read directory: %w", err)
+                }</span>
+                <span class="cov0" title="0">w.Result.AddError()</span>
+        } else<span class="cov8" title="1"> {
+                localResult := InitResult(path)
+                localWalker := &amp;Walker{
+                        Result: localResult,
+                        cfg:    w.cfg,
+                }
+                for _, entry := range entries </span><span class="cov8" title="1">{
+                        if err := localWalker.WalkPath(filepath.Join(path, entry.Name())); err != nil </span><span class="cov0" title="0">{
+                                return err
+                        }</span>
+                }
+                <span class="cov8" title="1">w.Result.AddDirectory()
+                w.Result.AddFromResult(localResult)
+                if w.cfg.Verbose &amp;&amp; filepath.Clean(path) != filepath.Clean(w.cfg.RootPath) </span><span class="cov0" title="0">{
+                        PrintVerbose(localResult.TotalSize, localResult.RootPath)
+                }</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+// WalkRegularFile adds the size of a regular file to the current result.
+func (w *Walker) WalkRegularFile(path string) error <span class="cov8" title="1">{
+        fi, err := os.Stat(path)
+        if err != nil </span><span class="cov0" title="0">{
+                if !w.cfg.SkipErrors </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to stat path: %w", err)
+                }</span>
+                <span class="cov0" title="0">w.Result.AddError()</span>
+        } else<span class="cov8" title="1"> {
+                w.Result.AddFile(fi.Size())
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// WalkPath dispatches walking logic based on file mode.
+func (w *Walker) WalkPath(path string) error <span class="cov8" title="1">{
+        fi, err := os.Lstat(path)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to lstat path: %w", err)
+        }</span>
+        <span class="cov8" title="1">mode := fi.Mode()
+        switch </span>{
+        case mode&amp;os.ModeSymlink != 0:<span class="cov8" title="1">
+                if !w.cfg.FollowSymlinks </span><span class="cov8" title="1">{
+                        w.Result.AddSymlinkSkipped()
+                }</span> else<span class="cov8" title="1"> {
+                        return w.WalkSymlink(path)
+                }</span>
+        case mode.IsDir():<span class="cov8" title="1">
+                return w.WalkDirectory(path)</span>
+        case mode.IsRegular():<span class="cov8" title="1">
+                return w.WalkRegularFile(path)</span>
+        default:<span class="cov0" title="0">
+                w.Result.AddOtherCount()</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

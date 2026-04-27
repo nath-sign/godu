@@ -2,6 +2,7 @@ package scan
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -11,6 +12,7 @@ type Walker struct {
 	cfg    *Config
 }
 
+// Scan walks the configured root path and returns aggregated metrics.
 func Scan(config *Config) (*Result, error) {
 	if err := config.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)
@@ -29,10 +31,18 @@ func Scan(config *Config) (*Result, error) {
 	return result, nil
 }
 
-func PrintVerbose(size int64, path string) {
-	fmt.Fprintf(os.Stdout, "%-*d\t %s\n", 8, size, path)
+// PrintVerbose prints a single verbose scan output line.
+func PrintVerbose(size int64, path string, writer ...io.Writer) {
+	var w io.Writer
+	if len(writer) == 0 {
+		w = os.Stdout
+	} else {
+		w = writer[0]
+	}
+	fmt.Fprintf(w, "%-*d\t %s\n", 8, size, path)
 }
 
+// WalkSymlink resolves and walks a symlink target.
 func (w *Walker) WalkSymlink(path string) error {
 	realPath, err := filepath.EvalSymlinks(path)
 	if err != nil {
@@ -46,6 +56,7 @@ func (w *Walker) WalkSymlink(path string) error {
 	return nil
 }
 
+// WalkDirectory recursively walks directory entries and merges local results.
 func (w *Walker) WalkDirectory(path string) error {
 	entries, err := os.ReadDir(path)
 	if err != nil {
@@ -73,6 +84,7 @@ func (w *Walker) WalkDirectory(path string) error {
 	return nil
 }
 
+// WalkRegularFile adds the size of a regular file to the current result.
 func (w *Walker) WalkRegularFile(path string) error {
 	fi, err := os.Stat(path)
 	if err != nil {
@@ -86,6 +98,7 @@ func (w *Walker) WalkRegularFile(path string) error {
 	return nil
 }
 
+// WalkPath dispatches walking logic based on file mode.
 func (w *Walker) WalkPath(path string) error {
 	fi, err := os.Lstat(path)
 	if err != nil {

@@ -51,7 +51,7 @@ func RunScan(args []string) error {
 			return err
 		}
 		if config.Verbose {
-			fmt.Fprintf(os.Stdout, "%d: %s\n", result.TotalSize, result.RootPath)
+			scan.PrintVerbose(result.TotalSize, result.RootPath)
 		}
 		results.AddFromResult(result)
 	}

@@ -29,6 +29,63 @@ func Scan(config *Config) (*Result, error) {
 	return result, nil
 }
 
+func PrintVerbose(size int64, path string) {
+	fmt.Fprintf(os.Stdout, "%-*d\t %s\n", 8, size, path)
+}
+
+func (w *Walker) WalkSymlink(path string) error {
+	realPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		if !w.cfg.SkipErrors {
+			return fmt.Errorf("failed to evaluate symlink: %w", err)
+		}
+		w.Result.AddError()
+	} else {
+		return w.WalkPath(realPath)
+	}
+	return nil
+}
+
+func (w *Walker) WalkDirectory(path string) error {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		if !w.cfg.SkipErrors {
+			return fmt.Errorf("failed to read directory: %w", err)
+		}
+		w.Result.AddError()
+	} else {
+		localResult := InitResult(path)
+		localWalker := &Walker{
+			Result: localResult,
+			cfg:    w.cfg,
+		}
+		for _, entry := range entries {
+			if err := localWalker.WalkPath(filepath.Join(path, entry.Name())); err != nil {
+				return err
+			}
+		}
+		w.Result.AddDirectory()
+		w.Result.AddFromResult(localResult)
+		if w.cfg.Verbose && filepath.Clean(path) != filepath.Clean(w.cfg.RootPath) {
+			PrintVerbose(localResult.TotalSize, localResult.RootPath)
+		}
+	}
+	return nil
+}
+
+func (w *Walker) WalkRegularFile(path string) error {
+	fi, err := os.Stat(path)
+	if err != nil {
+		if !w.cfg.SkipErrors {
+			return fmt.Errorf("failed to stat path: %w", err)
+		}
+		w.Result.AddError()
+	} else {
+		w.Result.AddFile(fi.Size())
+	}
+	return nil
+}
+
 func (w *Walker) WalkPath(path string) error {
 	fi, err := os.Lstat(path)
 	if err != nil {
@@ -40,52 +97,12 @@ func (w *Walker) WalkPath(path string) error {
 		if !w.cfg.FollowSymlinks {
 			w.Result.AddSymlinkSkipped()
 		} else {
-			realPath, err := filepath.EvalSymlinks(path)
-			if err != nil {
-				if !w.cfg.SkipErrors {
-					return fmt.Errorf("failed to evaluate symlink: %w", err)
-				}
-				w.Result.AddError()
-			} else {
-				if err := w.WalkPath(realPath); err != nil {
-					return err
-				}
-			}
+			return w.WalkSymlink(path)
 		}
 	case mode.IsDir():
-		entries, err := os.ReadDir(path)
-		if err != nil {
-			if !w.cfg.SkipErrors {
-				return fmt.Errorf("failed to read directory: %w", err)
-			}
-			w.Result.AddError()
-		} else {
-			localResult := InitResult(path)
-			localWalker := &Walker{
-				Result: localResult,
-				cfg:    w.cfg,
-			}
-			for _, entry := range entries {
-				if err := localWalker.WalkPath(filepath.Join(path, entry.Name())); err != nil {
-					return err
-				}
-			}
-			w.Result.AddDirectory()
-			w.Result.AddFromResult(localResult)
-			if w.cfg.Verbose {
-				fmt.Fprintf(os.Stdout, "%d: %s\n", localResult.TotalSize, localResult.RootPath)
-			}
-		}
+		return w.WalkDirectory(path)
 	case mode.IsRegular():
-		fi, err := os.Stat(path)
-		if err != nil {
-			if !w.cfg.SkipErrors {
-				return fmt.Errorf("failed to stat path: %w", err)
-			}
-			w.Result.AddError()
-		} else {
-			w.Result.AddFile(fi.Size())
-		}
+		return w.WalkRegularFile(path)
 	default:
 		w.Result.AddOtherCount()
 	}
